@@ -29,11 +29,12 @@ CK_MAX = 30
 UPDATE_NUM = 200
 
 LINE_NOISE = 1.
-SEARCH_ANGLE = 0.1*pi
+SEARCH_ANGLE = 0.5*pi
 SOURCE_NUM = 3
 
 ALPHA = 0.5
 GRAINS = 3
+
 
 def near_zone_inds(x,y,Z,k):
   
@@ -195,7 +196,6 @@ class Render(object):
       self.num += 1
 
     return True, True
-
 
 
 def main():
