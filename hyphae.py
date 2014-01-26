@@ -24,16 +24,16 @@ Y_MIN = 0+10*ONE
 X_MAX = 1-10*ONE
 Y_MAX = 1-10*ONE
 
-MAX_NUM = 10000
+MAX_NUM = 20000
 
 RAD = 3*ONE;
-R_RAND_SIZE = 5
+R_RAND_SIZE = 7
 CK_MAX = 30
 
 UPDATE_NUM = 200
 
 LINE_NOISE = 1.
-SEARCH_ANGLE = 0.1*pi
+SEARCH_ANGLE = 0.15*pi
 SOURCE_NUM = 3
 
 ALPHA = 0.5
@@ -73,8 +73,8 @@ class Render(object):
 
     self.n = n
 
-    self.__init_data()
     self.__init_cairo()
+    self.__init_data()
 
     window = gtk.Window()
     window.resize(self.n, self.n)
@@ -105,13 +105,19 @@ class Render(object):
 
     for i in xrange(SOURCE_NUM):
 
-      X[i] = X_MIN + rand()*(X_MAX-X_MIN) 
-      Y[i] = Y_MIN + rand()*(Y_MAX-Y_MIN) 
-      THE[i] = rand()*pi*2.
+      x = X_MIN + rand()*(X_MAX-X_MIN) 
+      y = Y_MIN + rand()*(Y_MAX-Y_MIN) 
+      the = rand()*pi*2.
+      X[i] = x
+      Y[i] = y
+      THE[i] = the
 
-      z = get_z(X[i],Y[i])
+      z = get_z(x,y)
       Z[z].append(num)
       num += 1
+
+      ## draw inicator circle
+      self.circle(x,y,ONE*10)
 
     self.X = X
     self.Y = Y
@@ -141,6 +147,12 @@ class Render(object):
     self.ctx.line_to(x2,y2)
     self.ctx.stroke()
 
+  def circle(self,x,y,r):
+
+    self.ctx.set_source_rgba(1,0,0,0.4)
+    self.ctx.arc(x,y,r,0,pi*2.)
+    self.ctx.fill()
+
   def expose(self,*args):
 
     cr = self.darea.window.cairo_create()
@@ -156,8 +168,8 @@ class Render(object):
 
     if self.num>MAX_NUM:
 
-      self.__init_data()
       self.__init_cairo()
+      self.__init_data()
 
     return res
 

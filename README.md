@@ -1,4 +1,4 @@
-about anihyphae
+about hyphae\_ani
 =============
 
 animates generation of root-like networks where no edges overlap
