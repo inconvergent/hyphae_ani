@@ -11,25 +11,29 @@ from numpy.random import normal as norm
 
 import gtk, gobject
 
-
 any = np.any
 all = np.all
 
-N = 1000
+N = 800
 ZONES = N/20
 ONE = 1./N
 BACK = 1.
 FRONT = 0.
-MID = 0.5
+X_MIN = 0+10*ONE
+Y_MIN = 0+10*ONE
+X_MAX = 1-10*ONE
+Y_MAX = 1-10*ONE
+
+MAX_NUM = 10000
 
 RAD = 3*ONE;
-R_RAND_SIZE = 10
+R_RAND_SIZE = 5
 CK_MAX = 30
 
 UPDATE_NUM = 200
 
 LINE_NOISE = 1.
-SEARCH_ANGLE = 0.5*pi
+SEARCH_ANGLE = 0.1*pi
 SOURCE_NUM = 3
 
 ALPHA = 0.5
@@ -67,20 +71,13 @@ class Render(object):
 
   def __init__(self,n):
 
+    self.n = n
+
     self.__init_data()
-
-    sur = cairo.ImageSurface(cairo.FORMAT_ARGB32,n,n)
-    ctx = cairo.Context(sur)
-    ctx.scale(n,n)
-    ctx.set_source_rgb(BACK,BACK,BACK)
-    ctx.rectangle(0,0,1,1)
-    ctx.fill()
-
-    self.sur = sur
-    self.ctx = ctx
+    self.__init_cairo()
 
     window = gtk.Window()
-    window.resize(n, n)
+    window.resize(self.n, self.n)
     window.connect("destroy", gtk.main_quit)
     darea = gtk.DrawingArea()
     darea.connect("expose-event", self.expose)
@@ -91,12 +88,6 @@ class Render(object):
 
     gobject.idle_add(self.step_wrap)
     gtk.main()
-
-  def expose(self,*args):
-
-    cr = self.darea.window.cairo_create()
-    cr.set_source_surface(self.sur,0,0)
-    cr.paint()
 
   def __init_data(self):
 
@@ -114,8 +105,8 @@ class Render(object):
 
     for i in xrange(SOURCE_NUM):
 
-      X[i] = rand()
-      Y[i] = rand()
+      X[i] = X_MIN + rand()*(X_MAX-X_MIN) 
+      Y[i] = Y_MIN + rand()*(Y_MAX-Y_MIN) 
       THE[i] = rand()*pi*2.
 
       z = get_z(X[i],Y[i])
@@ -130,6 +121,18 @@ class Render(object):
     self.THE = THE
     self.num = num
 
+  def __init_cairo(self):
+
+    sur = cairo.ImageSurface(cairo.FORMAT_ARGB32,self.n,self.n)
+    ctx = cairo.Context(sur)
+    ctx.scale(self.n,self.n)
+    ctx.set_source_rgb(BACK,BACK,BACK)
+    ctx.rectangle(0,0,1,1)
+    ctx.fill()
+
+    self.sur = sur
+    self.ctx = ctx
+
   def line(self,x1,y1,x2,y2):
 
     self.ctx.set_source_rgba(FRONT,FRONT,FRONT)
@@ -138,12 +141,23 @@ class Render(object):
     self.ctx.line_to(x2,y2)
     self.ctx.stroke()
 
+  def expose(self,*args):
+
+    cr = self.darea.window.cairo_create()
+    cr.set_source_surface(self.sur,0,0)
+    cr.paint()
+
   def step_wrap(self,*args):
 
     res, added_new = self.step()
 
     if not self.num%UPDATE_NUM and added_new:
       self.expose()
+
+    if self.num>MAX_NUM:
+
+      self.__init_data()
+      self.__init_cairo()
 
     return res
 
@@ -167,6 +181,9 @@ class Render(object):
     r = RAD  + rand()*ONE*R_RAND_SIZE
     x = X[k] + sin(the)*r
     y = Y[k] + cos(the)*r
+
+    if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
+      return True, False
     
     try:
       inds = near_zone_inds(x,y,Z,k)
