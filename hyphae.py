@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from numpy import cos, sin, pi, arctan2, sqrt, square, int, linspace
+from numpy import cos, sin, pi, arctan2, sqrt, square, int, linspace, any, all
 from numpy.random import random as rand
 import numpy as np
 import cairo
@@ -10,9 +10,6 @@ from operator import itemgetter
 from numpy.random import normal as norm
 
 import gtk, gobject
-
-any = np.any
-all = np.all
 
 N = 800
 ZONES = N/20
@@ -25,6 +22,7 @@ X_MAX = 1-10*ONE
 Y_MAX = 1-10*ONE
 
 MAX_NUM = 20000
+MISS_MAX = 1000
 
 RAD = 3*ONE;
 R_RAND_SIZE = 7
@@ -63,7 +61,6 @@ def get_z(x,y):
 def get_relative_search_angle():
 
   a = norm()*SEARCH_ANGLE
-  #a = (0.5-rand())*SEARCH_ANGLE
   
   return a
 
@@ -85,6 +82,8 @@ class Render(object):
     window.show_all()
 
     self.darea = darea
+    
+    self.miss = 0
 
     gobject.idle_add(self.step_wrap)
     gtk.main()
@@ -165,11 +164,18 @@ class Render(object):
 
     if not self.num%UPDATE_NUM and added_new:
       self.expose()
+      self.miss = 0
 
-    if self.num>MAX_NUM:
+    ## if self.miss is too large the animation will restart
+    if not added_new:
+      self.miss += 1
+
+    if self.miss>MISS_MAX:
 
       self.__init_cairo()
       self.__init_data()
+      self.miss = 0
+      return True
 
     return res
 
