@@ -11,8 +11,8 @@ from numpy.random import normal as norm
 
 import gtk, gobject
 
-N = 800
-ZONES = N/20
+N = 1080
+ZONES = N/10
 ONE = 1./N
 BACK = 1.
 FRONT = 0.
@@ -28,7 +28,7 @@ RAD = 3*ONE;
 R_RAND_SIZE = 7
 CK_MAX = 30
 
-UPDATE_NUM = 200
+UPDATE_NUM = 40
 
 LINE_NOISE = 1.
 SEARCH_ANGLE = 0.15*pi
@@ -82,8 +82,10 @@ class Render(object):
     window.show_all()
 
     self.darea = darea
-    
+
+    self.num_img = 0
     self.miss = 0
+    self.itt = 0
 
     gobject.idle_add(self.step_wrap)
     gtk.main()
@@ -165,21 +167,27 @@ class Render(object):
     if not self.num%UPDATE_NUM and added_new:
       self.expose()
       self.miss = 0
+      fn = 'image{:05d}.png'.format(self.num_img)
+      self.sur.write_to_png(fn)
+      self.num_img += 1
+      print fn, self.num
 
     ## if self.miss is too large the animation will restart
-    if not added_new:
-      self.miss += 1
+    #if not added_new:
+      #self.miss += 1
 
-    if self.miss>MISS_MAX:
+    #if self.miss>MISS_MAX:
 
-      self.__init_cairo()
-      self.__init_data()
-      self.miss = 0
-      return True
+      #self.__init_cairo()
+      #self.__init_data()
+      #self.miss = 0
+      #return True
 
     return res
 
   def step(self):
+
+    self.itt += 1
 
     X = self.X
     Y = self.Y
@@ -230,7 +238,9 @@ class Render(object):
 
       self.num += 1
 
-    return True, True
+      return True, True
+
+    return True, False
 
 
 def main():
