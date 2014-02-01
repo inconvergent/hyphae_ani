@@ -11,27 +11,27 @@ from numpy.random import normal as norm
 
 import gtk, gobject
 
-N = 1080
-ZONES = N/10
-ONE = 1./N
+NMAX = 2*1e7 # maxmimum number of nodes
+
+N = 1080 # image resolution
+ZONES = N/10 # number of zones on each axis
+ONE = 1./N # pixelsize
 BACK = 1.
 FRONT = 0.
-X_MIN = 0+10*ONE
-Y_MIN = 0+10*ONE
-X_MAX = 1-10*ONE
-Y_MAX = 1-10*ONE
+X_MIN = 0+10*ONE # border
+Y_MIN = 0+10*ONE #
+X_MAX = 1-10*ONE #
+Y_MAX = 1-10*ONE #
 
-MAX_NUM = 20000
-MISS_MAX = 1000
+MISS_MAX = 1000 # restart on MISS_MAX failed branch attempts
 
-RAD = 3*ONE;
-R_RAND_SIZE = 7
-CK_MAX = 30
+RAD = 3*ONE ## radius = RAD + random()*R_RAND_SIZE
+R_RAND_SIZE = 7 
+CK_MAX = 30 # max number of allowed branch attempts from a node
 
-UPDATE_NUM = 40
+UPDATE_NUM = 40 # write image this often
 
-LINE_NOISE = 1.
-SEARCH_ANGLE = 0.15*pi
+SEARCH_ANGLE = 0.22*pi
 SOURCE_NUM = 3
 
 ALPHA = 0.5
@@ -92,41 +92,31 @@ class Render(object):
 
   def __init_data(self):
 
-    Z = [[] for i in xrange((ZONES+2)**2)]
+    self.Z = [[] for i in xrange((ZONES+2)**2)]
 
-    nmax = 2*1e7
-    R = np.zeros(nmax,dtype=np.float)
-    X = np.zeros(nmax,dtype=np.float)
-    Y = np.zeros(nmax,dtype=np.float)
-    THE = np.zeros(nmax,dtype=np.float)
+    self.P = np.zeros(NMAX,'int') # index of parent node
+    self.R = np.zeros(NMAX,'float') # radius
+    self.X = np.zeros(NMAX,'float') # x position
+    self.Y = np.zeros(NMAX,'float') # y position
+    self.THE = np.zeros(NMAX,'float') # angle
+    self.C = np.zeros(NMAX,'int') # number of branch attempts
 
-    C = np.zeros(nmax,dtype=np.int)
-
-    num = 0
+    self.num = 0
 
     for i in xrange(SOURCE_NUM):
-
       x = X_MIN + rand()*(X_MAX-X_MIN) 
       y = Y_MIN + rand()*(Y_MAX-Y_MIN) 
-      the = rand()*pi*2.
-      X[i] = x
-      Y[i] = y
-      THE[i] = the
+      self.X[i] = x
+      self.Y[i] = y
+      self.THE[i] = rand()*pi*2.
+      self.P[i] = -1 # no parent
 
       z = get_z(x,y)
-      Z[z].append(num)
-      num += 1
+      self.Z[z].append(self.num)
+      self.num += 1
 
       ## draw inicator circle
       self.circle(x,y,ONE*10)
-
-    self.X = X
-    self.Y = Y
-    self.R = R
-    self.Z = Z
-    self.C = C
-    self.THE = THE
-    self.num = num
 
   def __init_cairo(self):
 
@@ -168,7 +158,7 @@ class Render(object):
       self.expose()
       self.miss = 0
       fn = 'image{:05d}.png'.format(self.num_img)
-      self.sur.write_to_png(fn)
+      #self.sur.write_to_png(fn)
       self.num_img += 1
       print fn, self.num
 
