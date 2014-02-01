@@ -24,14 +24,15 @@ Y_MAX = 1-10*ONE #
 
 MISS_MAX = 1000 # restart on MISS_MAX failed branch attempts
 
-RAD = 3*ONE ## radius = RAD + random()*R_RAND_SIZE
+RAD = 10*ONE # 
+RAD_SCALE = 0.8
 R_RAND_SIZE = 7 
 CK_MAX = 30 # max number of allowed branch attempts from a node
 
-UPDATE_NUM = 40 # write image this often
+UPDATE_NUM = 80 # write image this often
 
 SEARCH_ANGLE = 0.22*pi
-SOURCE_NUM = 3
+SOURCE_NUM = 20
 
 ALPHA = 0.5
 GRAINS = 3
@@ -57,11 +58,6 @@ def get_z(x,y):
   z = i*ZONES+j
   return z
 
-def get_relative_search_angle():
-
-  a = norm()*SEARCH_ANGLE
-  
-  return a
 
 class Render(object):
 
@@ -104,19 +100,28 @@ class Render(object):
     self.num = 0
 
     for i in xrange(SOURCE_NUM):
+
+      ## randomly on canvas
       x = X_MIN + rand()*(X_MAX-X_MIN) 
       y = Y_MIN + rand()*(Y_MAX-Y_MIN) 
+
+      ## on circle
+      #x = 0.5 + sin((i*pi*2)/float(SOURCE_NUM-1))*0.3
+      #y = 0.5 + cos((i*pi*2)/float(SOURCE_NUM-1))*0.3
+
       self.X[i] = x
       self.Y[i] = y
       self.THE[i] = rand()*pi*2.
       self.P[i] = -1 # no parent
+      self.R[i] = RAD
 
       z = get_z(x,y)
       self.Z[z].append(self.num)
       self.num += 1
 
       ## draw inicator circle
-      self.circle(x,y,ONE*10)
+      self.ctx.set_source_rgba(1,0,0,0.4)
+      self.circle(x,y,RAD*0.5)
 
   def __init_cairo(self):
 
@@ -140,7 +145,6 @@ class Render(object):
 
   def circle(self,x,y,r):
 
-    self.ctx.set_source_rgba(1,0,0,0.4)
     self.ctx.arc(x,y,r,0,pi*2.)
     self.ctx.fill()
 
@@ -186,8 +190,13 @@ class Render(object):
     if self.C[k] > CK_MAX:
       return True, False
 
-    the = get_relative_search_angle()+self.THE[k]
-    r = RAD  + rand()*ONE*R_RAND_SIZE
+    #r = RAD + rand()*ONE*R_RAND_SIZE
+    r = self.R[k]*RAD_SCALE if self.D[k]>-1 else self.R[k]
+
+    #sa = norm()*SEARCH_ANGLE
+    sa = norm()*(1.-r/(RAD+ONE))*pi
+    the = sa+self.THE[k]
+
     x = self.X[k] + sin(the)*r
     y = self.Y[k] + cos(the)*r
 
@@ -222,7 +231,9 @@ class Render(object):
 
       self.Z[z].append(num)
 
+      self.ctx.set_source_rgba(0,0,0,0.9)
       self.line(self.X[k],self.Y[k],x,y)
+      #self.circle(x,y,r*0.5)
 
       self.num += 1
 
