@@ -12,7 +12,6 @@ from numpy.random import normal as norm
 import gtk, gobject
 
 NMAX = 2*1e7 # maxmimum number of nodes
-
 N = 1080 # image resolution
 ZONES = N/10 # number of zones on each axis
 ONE = 1./N # pixelsize
@@ -95,6 +94,7 @@ class Render(object):
     self.Z = [[] for i in xrange((ZONES+2)**2)]
 
     self.P = np.zeros(NMAX,'int') # index of parent node
+    self.D = np.zeros(NMAX,'int')-1 # index of first descendant
     self.R = np.zeros(NMAX,'float') # radius
     self.X = np.zeros(NMAX,'float') # x position
     self.Y = np.zeros(NMAX,'float') # y position
@@ -178,53 +178,51 @@ class Render(object):
   def step(self):
 
     self.itt += 1
-
-    X = self.X
-    Y = self.Y
-    R = self.R
-    Z = self.Z
-    C = self.C
-    THE = self.THE
     num = self.num
 
     k = int(rand()*num)
-    C[k] += 1
+    self.C[k] += 1
 
-    if C[k] > CK_MAX:
+    if self.C[k] > CK_MAX:
       return True, False
 
-    the = get_relative_search_angle()+THE[k]
+    the = get_relative_search_angle()+self.THE[k]
     r = RAD  + rand()*ONE*R_RAND_SIZE
-    x = X[k] + sin(the)*r
-    y = Y[k] + cos(the)*r
+    x = self.X[k] + sin(the)*r
+    y = self.Y[k] + cos(the)*r
 
     if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
       return True, False
     
     try:
-      inds = near_zone_inds(x,y,Z,k)
+      inds = near_zone_inds(x,y,self.Z,k)
     except IndexError:
       return True, False
 
     good = True
     if len(inds)>0:
-      dd = square(X[inds]-x) + square(Y[inds]-y)
+      dd = square(self.X[inds]-x) + square(self.Y[inds]-y)
 
       sqrt(dd,dd)
-      mask = dd*2 >= (R[inds] + r)
+      mask = dd*2 >= self.R[inds]+r
       good = mask.all()
       
     if good: 
-      X[num] = x
-      Y[num] = y
-      R[num] = r
-      THE[num] = the
+      self.X[num] = x
+      self.Y[num] = y
+      self.R[num] = r
+      self.THE[num] = the
+      self.P[num] = k
+
+      ## set first descendant if node has no descendants
+      if self.D[k]<0:
+        self.D[k] = num
 
       z = get_z(x,y) 
 
-      Z[z].append(num)
+      self.Z[z].append(num)
 
-      self.line(X[k],Y[k],x,y)
+      self.line(self.X[k],self.Y[k],x,y)
 
       self.num += 1
 
