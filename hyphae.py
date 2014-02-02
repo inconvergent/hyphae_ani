@@ -1,19 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from numpy import cos, sin, pi, arctan2, sqrt, square, int, linspace, any, all
-from numpy.random import random as rand
+from numpy import cos, sin, pi, arctan2, sqrt,\
+                  square, int, linspace, any, all
+from numpy.random import random as random
 import numpy as np
 import cairo
 from time import time as time
 from operator import itemgetter
-from numpy.random import normal as norm
+from numpy.random import normal as normal
 
 import gtk, gobject
 
 NMAX = 2*1e7 # maxmimum number of nodes
 N = 1080 # image resolution
-ZONES = N/10 # number of zones on each axis
+ZONES = N/8 # number of zones on each axis
 ONE = 1./N # pixelsize
 BACK = 1.
 FRONT = 0.
@@ -27,12 +28,12 @@ MISS_MAX = 1000 # restart on MISS_MAX failed branch attempts
 RAD = 10*ONE # 
 RAD_SCALE = 0.8
 R_RAND_SIZE = 7 
-CK_MAX = 30 # max number of allowed branch attempts from a node
+CK_MAX = 7 # max number of allowed branch attempts from a node
 
-UPDATE_NUM = 80 # write image this often
+UPDATE_NUM = 200 # write image this often
 
 SEARCH_ANGLE = 0.22*pi
-SOURCE_NUM = 20
+SOURCE_NUM = 6
 
 ALPHA = 0.5
 GRAINS = 3
@@ -70,7 +71,7 @@ class Render(object):
 
     window = gtk.Window()
     window.resize(self.n, self.n)
-    window.connect("destroy", gtk.main_quit)
+    window.connect("destroy", self.__write_image_and_exit)
     darea = gtk.DrawingArea()
     darea.connect("expose-event", self.expose)
     window.add(darea)
@@ -84,6 +85,11 @@ class Render(object):
 
     gobject.idle_add(self.step_wrap)
     gtk.main()
+
+  def __write_image_and_exit(self,*args):
+
+    self.sur.write_to_png('on_exit.png')
+    gtk.main_quit(*args)
 
   def __init_data(self):
 
@@ -102,8 +108,8 @@ class Render(object):
     for i in xrange(SOURCE_NUM):
 
       ## randomly on canvas
-      x = X_MIN + rand()*(X_MAX-X_MIN) 
-      y = Y_MIN + rand()*(Y_MAX-Y_MIN) 
+      x = X_MIN + random()*(X_MAX-X_MIN) 
+      y = Y_MIN + random()*(Y_MAX-Y_MIN) 
 
       ## on circle
       #x = 0.5 + sin((i*pi*2)/float(SOURCE_NUM-1))*0.3
@@ -111,7 +117,7 @@ class Render(object):
 
       self.X[i] = x
       self.Y[i] = y
-      self.THE[i] = rand()*pi*2.
+      self.THE[i] = random()*pi*2.
       self.P[i] = -1 # no parent
       self.R[i] = RAD
 
@@ -137,8 +143,9 @@ class Render(object):
 
   def line(self,x1,y1,x2,y2):
 
+    #self.ctx.set_line_width(ONE*2.)
+
     self.ctx.set_source_rgba(FRONT,FRONT,FRONT)
-    self.ctx.set_line_width(ONE*2.)
     self.ctx.move_to(x1,y1)
     self.ctx.line_to(x2,y2)
     self.ctx.stroke()
@@ -147,6 +154,27 @@ class Render(object):
 
     self.ctx.arc(x,y,r,0,pi*2.)
     self.ctx.fill()
+
+  def circles(self,x1,y1,x2,y2,r):
+
+    dx = x1-x2
+    dy = y1-y2
+    dd = sqrt(dx*dx+dy*dy)
+
+    n = int(dd/ONE)
+    n = n if n>6 else 6
+
+    a = arctan2(dy,dx)
+
+    #scale = random(n)*dd
+    scale = linspace(0,dd,n)
+
+    xp = x1-scale*cos(a)
+    yp = y1-scale*sin(a)
+
+    for x,y in zip(xp,yp):
+      self.ctx.arc(x,y,r,0,pi*2.) 
+      self.ctx.fill()
 
   def expose(self,*args):
 
@@ -184,28 +212,41 @@ class Render(object):
     self.itt += 1
     num = self.num
 
-    k = int(rand()*num)
+    k = int(random()*num)
     self.C[k] += 1
 
-    if self.C[k] > CK_MAX:
+    if self.C[k]>CK_MAX:
+
+      ## node is dead
       return True, False
 
-    #r = RAD + rand()*ONE*R_RAND_SIZE
+    #r = RAD + random()*ONE*R_RAND_SIZE
     r = self.R[k]*RAD_SCALE if self.D[k]>-1 else self.R[k]
 
-    #sa = norm()*SEARCH_ANGLE
-    sa = norm()*(1.-r/(RAD+ONE))*pi
+    if r<ONE*0.5:
+
+      ## node dies
+      self.C[k] = CK_MAX+1
+      return True, False
+
+    #sa = normal()*SEARCH_ANGLE
+    sa = normal()*(1.-r/(RAD+ONE))*pi
     the = sa+self.THE[k]
 
     x = self.X[k] + sin(the)*r
     y = self.Y[k] + cos(the)*r
 
     if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
+
+      ## node is outside canvas
       return True, False
     
     try:
+
       inds = near_zone_inds(x,y,self.Z,k)
     except IndexError:
+
+      ## node is outside zonemapped area
       return True, False
 
     good = True
@@ -231,14 +272,18 @@ class Render(object):
 
       self.Z[z].append(num)
 
+      #self.ctx.set_line_width(r*0.5)
+      #self.line(self.X[k],self.Y[k],x,y)
+
       self.ctx.set_source_rgba(0,0,0,0.9)
-      self.line(self.X[k],self.Y[k],x,y)
-      #self.circle(x,y,r*0.5)
+      self.circles(self.X[k],self.Y[k],x,y,r*0.3)
 
       self.num += 1
 
+      ## node was added
       return True, True
 
+    ## failed to place node
     return True, False
 
 
