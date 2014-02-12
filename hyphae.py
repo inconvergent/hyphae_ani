@@ -18,16 +18,16 @@ ZONES = N/8 # number of zones on each axis
 ONE = 1./N # pixelsize
 BACK = 1.
 FRONT = 0.
-X_MIN = 0+10*ONE # border
-Y_MIN = 0+10*ONE #
-X_MAX = 1-10*ONE #
-Y_MAX = 1-10*ONE #
+X_MIN = 0.+10.*ONE # border
+Y_MIN = 0.+10.*ONE #
+X_MAX = 1.-10.*ONE #
+Y_MAX = 1.-10.*ONE #
 
 MISS_MAX = 1000 # restart on MISS_MAX failed branch attempts
 
-RAD = 10*ONE # 
+RAD = 5.*ONE # 
 RAD_SCALE = 0.8
-R_RAND_SIZE = 7 
+R_RAND_SIZE = 3.5
 CK_MAX = 7 # max number of allowed branch attempts from a node
 
 UPDATE_NUM = 200 # write image this often
@@ -126,7 +126,7 @@ class Render(object):
       self.num += 1
 
       ## draw inicator circle
-      self.ctx.set_source_rgba(1,0,0,0.4)
+      self.ctx.set_source_rgba(0,0,0,1)
       self.circle(x,y,RAD*0.5)
 
   def __init_cairo(self):
@@ -225,6 +225,8 @@ class Render(object):
 
     if r<ONE*0.5:
 
+      #self.ctx.set_source_rgba(0,0,1,0.09)
+      #self.circle(self.X[k],self.Y[k],ONE*5)
       ## node dies
       self.C[k] = CK_MAX+1
       return True, False
@@ -233,8 +235,8 @@ class Render(object):
     sa = normal()*(1.-r/(RAD+ONE))*pi
     the = sa+self.THE[k]
 
-    x = self.X[k] + sin(the)*r
-    y = self.Y[k] + cos(the)*r
+    x = self.X[k] + sin(the)*(r+self.R[k])
+    y = self.Y[k] + cos(the)*(r+self.R[k])
 
     if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
 
@@ -254,7 +256,7 @@ class Render(object):
       dd = square(self.X[inds]-x) + square(self.Y[inds]-y)
 
       sqrt(dd,dd)
-      mask = dd*2 >= self.R[inds]+r
+      mask = dd >= self.R[inds]+r
       good = mask.all()
       
     if good: 
@@ -275,8 +277,8 @@ class Render(object):
       #self.ctx.set_line_width(r*0.5)
       #self.line(self.X[k],self.Y[k],x,y)
 
-      self.ctx.set_source_rgba(0,0,0,0.9)
-      self.circles(self.X[k],self.Y[k],x,y,r*0.3)
+      self.ctx.set_source_rgb(0,0,0)
+      self.circles(self.X[k],self.Y[k],x,y,r*0.8)
 
       self.num += 1
 
