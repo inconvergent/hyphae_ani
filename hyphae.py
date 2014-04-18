@@ -13,11 +13,13 @@ from numpy.random import normal as normal
 import gtk, gobject
 
 NMAX = 2*1e7 # maxmimum number of nodes
-N = 1080 # image resolution
+N = 800 # image resolution
 ZONES = N/8 # number of zones on each axis
 ONE = 1./N # pixelsize
-BACK = 1.
-FRONT = 0.
+
+BACK = 0.2
+FRONT = 0.7
+
 X_MIN = 0+10*ONE # border
 Y_MIN = 0+10*ONE #
 X_MAX = 1-10*ONE #
@@ -26,14 +28,16 @@ Y_MAX = 1-10*ONE #
 MISS_MAX = 1000 # restart on MISS_MAX failed branch attempts
 
 RAD = 10*ONE # 
-RAD_SCALE = 0.8
+RAD_SCALE = 0.9
 R_RAND_SIZE = 7 
 CK_MAX = 7 # max number of allowed branch attempts from a node
+
+CIRCLE_RADIUS = 0.4
 
 UPDATE_NUM = 200 # write image this often
 
 SEARCH_ANGLE = 0.22*pi
-SOURCE_NUM = 6
+SOURCE_NUM = 3
 
 ALPHA = 0.5
 GRAINS = 3
@@ -108,12 +112,12 @@ class Render(object):
     for i in xrange(SOURCE_NUM):
 
       ## randomly on canvas
-      x = X_MIN + random()*(X_MAX-X_MIN) 
-      y = Y_MIN + random()*(Y_MAX-Y_MIN) 
+      #x = X_MIN + random()*(X_MAX-X_MIN) 
+      #y = Y_MIN + random()*(Y_MAX-Y_MIN) 
 
       ## on circle
-      #x = 0.5 + sin((i*pi*2)/float(SOURCE_NUM-1))*0.3
-      #y = 0.5 + cos((i*pi*2)/float(SOURCE_NUM-1))*0.3
+      x = 0.5 + sin((i*pi*2)/float(SOURCE_NUM-1))*0.1
+      y = 0.5 + cos((i*pi*2)/float(SOURCE_NUM-1))*0.1
 
       self.X[i] = x
       self.Y[i] = y
@@ -126,8 +130,8 @@ class Render(object):
       self.num += 1
 
       ## draw inicator circle
-      self.ctx.set_source_rgba(1,0,0,0.4)
-      self.circle(x,y,RAD*0.5)
+      #self.ctx.set_source_rgba(1,0,0,0.4)
+      #self.circle(x,y,RAD*0.5)
 
   def __init_cairo(self):
 
@@ -236,10 +240,19 @@ class Render(object):
     x = self.X[k] + sin(the)*r
     y = self.Y[k] + cos(the)*r
 
-    if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
+    ## stop nodes at edge of canvas
+    #if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
 
-      ## node is outside canvas
-      return True, False
+      ### node is outside canvas
+      #return True, False
+
+    ## stop nodes at edge of circle
+    ## remember to set initial node inside circle.
+    circle_rad = sqrt(square(x-0.5)+square(y-0.5))
+    if circle_rad>CIRCLE_RADIUS:
+
+      ## node is outside circle
+      return True,False
     
     try:
 
@@ -275,7 +288,7 @@ class Render(object):
       #self.ctx.set_line_width(r*0.5)
       #self.line(self.X[k],self.Y[k],x,y)
 
-      self.ctx.set_source_rgba(0,0,0,0.9)
+      self.ctx.set_source_rgb(FRONT,FRONT,FRONT)
       self.circles(self.X[k],self.Y[k],x,y,r*0.3)
 
       self.num += 1
