@@ -210,7 +210,7 @@ class Render(object):
     if not self.num%UPDATE_NUM and added_new:
       self.expose()
 
-    print self.num
+    #print self.num
 
     return res
 
@@ -261,6 +261,7 @@ class Render(object):
     try:
 
       inds = near_zone_inds(x,y,self.Z,k)
+
     except IndexError:
 
       ## node is outside zonemapped area
@@ -273,6 +274,9 @@ class Render(object):
       sqrt(dst,dst)
       mask = dst*2 >= self.R[inds]+r
       good = mask.all()
+
+    ## zone index of candidate node
+    z = get_z(x,y) 
       
     if good: 
       self.X[num] = x
@@ -293,8 +297,6 @@ class Render(object):
         ## descendant is already -1
         #pass
 
-      z = get_z(x,y) 
-
       self.Z[z].append(num)
 
       #self.ctx.set_line_width(r*0.5)
@@ -310,6 +312,24 @@ class Render(object):
 
       ## node was added
       return True, True
+
+    if not good and len(inds)>0:
+
+      ## can we merge two branches?
+      
+      if mask.sum()==1:
+
+        mk = inds[mask][0]
+
+        print self.num, inds
+        print b, self.B[inds[mask]]
+        print k, mk
+
+        self.ctx.set_source_rgb(*CONTRASTA)
+        self.circles(self.X[k],self.Y[k],self.X[mk],self.Y[mk],r*0.3)
+
+        self.C[k] = CK_MAX+1
+        self.C[mk] = CK_MAX+1
 
     ## failed to place node
     return True, False
