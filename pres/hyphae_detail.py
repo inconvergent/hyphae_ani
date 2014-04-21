@@ -10,11 +10,13 @@ from time import time as time
 from operator import itemgetter
 from numpy.random import normal as normal
 
+from collections import deque
+
 import gtk, gobject
 
 NMAX = 2*1e7 # maxmimum number of nodes
 N = 800 # image resolution
-ZONES = N/20 # number of zones on each axis
+ZONES = N/100 # number of zones on each axis
 ONE = 1./N # pixelsize
 
 BACK = [0.1]*3
@@ -28,7 +30,7 @@ Y_MIN = 0+10*ONE #
 X_MAX = 1-10*ONE #
 Y_MAX = 1-10*ONE #
 
-RAD = 20*ONE # 
+RAD = 40*ONE # 
 RAD_SCALE = 0.9
 R_RAND_SIZE = 7 
 CK_MAX = 7 # max number of allowed branch attempts from a node
@@ -36,10 +38,11 @@ CK_MAX = 7 # max number of allowed branch attempts from a node
 #CIRCLE_RADIUS = 0.4
 
 UPDATE_NUM = 1 # write image this often
+TIMEOUT = 100 ## 5 is quite fast
 
 SEARCH_ANGLE_MAX = pi
 SEARCH_ANGLE_EXP = 0.15
-SOURCE_NUM = 4
+SOURCE_NUM = 1
 
 ALPHA = 0.5
 GRAINS = 3
@@ -91,7 +94,7 @@ class Render(object):
     self.itt = 0
 
     #gobject.idle_add(self.step_wrap)
-    gobject.timeout_add(5,self.step_wrap)
+    gobject.timeout_add(TIMEOUT,self.step_wrap)
     gtk.main()
 
   def __write_image_and_exit(self,*args):
@@ -111,35 +114,31 @@ class Render(object):
     self.P = np.zeros(NMAX,'int') # index of parent node
     self.C = np.zeros(NMAX,'int') # number of branch attempts
     self.D = np.zeros(NMAX,'int')-1 # index of first descendant
+    self.DQ = deque()
 
     self.num = 0
 
-    rot = random()*pi*2
+    ## only one source node
+    i = 0
 
-    for i in xrange(SOURCE_NUM):
+    x = 0.5
+    y = 0.5
 
-      ## randomly on canvas
-      #x = X_MIN*5 + random()*(X_MAX-X_MIN)
-      #y = Y_MIN*5 + random()*(Y_MAX-Y_MIN)
+    self.X[i] = x
+    self.Y[i] = y
+    self.THE[i] = random()*pi*2.
+    self.GE[i] = 1
+    self.P[i] = -1 # no parent
+    self.R[i] = RAD
+    self.DQ.append(i)
 
-      ## on circle
-      x = 0.5 + sin(rot + (i*pi*2)/float(SOURCE_NUM))*0.1
-      y = 0.5 + cos(rot + (i*pi*2)/float(SOURCE_NUM))*0.1
+    z = get_z(x,y)
+    self.Z[z].append(self.num)
+    self.num += 1
 
-      self.X[i] = x
-      self.Y[i] = y
-      self.THE[i] = random()*pi*2.
-      self.GE[i] = 1
-      self.P[i] = -1 # no parent
-      self.R[i] = RAD
-
-      z = get_z(x,y)
-      self.Z[z].append(self.num)
-      self.num += 1
-
-      ## draw inicator circle
-      self.ctx.set_source_rgba(*CONTRASTA)
-      self.circle(x,y,RAD*0.5)
+    ## draw inicator circle
+    self.ctx.set_source_rgba(*CONTRASTB)
+    self.circle(x,y,RAD*0.5)
 
   def __init_cairo(self):
 
@@ -216,20 +215,37 @@ class Render(object):
     self.itt += 1
     num = self.num
 
-    k = int(random()*num)
+    try:
+
+      k = self.DQ.pop()
+
+    except IndexError:
+
+      ## no more live nodes.
+      return False, False
+
     self.C[k] += 1
 
     if self.C[k]>CK_MAX:
 
       ## node is dead
+
+      ## this is inefficient. but it does not matter for small canvases
+      self.ctx.set_source_rgb(*CONTRASTC)
+      self.circle(self.X[k],self.Y[k],ONE*4)
+
       return True, False
 
     #r = RAD + random()*ONE*R_RAND_SIZE
     r = self.R[k]*RAD_SCALE if self.D[k]>-1 else self.R[k]
 
-    if r<ONE*0.5:
+    if r<ONE:
 
       ## node dies
+
+      self.ctx.set_source_rgb(*CONTRASTC)
+      self.circle(self.X[k],self.Y[k],ONE*4)
+
       self.C[k] = CK_MAX+1
       return True, False
 
@@ -261,6 +277,7 @@ class Render(object):
     except IndexError:
 
       ## node is outside zonemapped area
+      self.DQ.appendleft(k)
       return True, False
 
     good = True
@@ -287,14 +304,23 @@ class Render(object):
 
       self.Z[z].append(num)
 
-      #self.ctx.set_line_width(r*0.5)
-      #self.line(self.X[k],self.Y[k],x,y)
-
+      self.ctx.set_line_width(ONE*2)
       self.ctx.set_source_rgb(*FRONT)
-      self.circles(self.X[k],self.Y[k],x,y,r*0.3)
+      self.line(self.X[k],self.Y[k],x,y)
+
+      self.ctx.set_source_rgb(*CONTRASTB)
+      self.circle(x,y,ONE*4)
+
+      self.ctx.set_line_width(ONE)
+      self.ctx.set_source_rgb(*CONTRASTA)
+      self.circle_stroke(x,y,r*0.5)
+
+      #self.circles(self.X[k],self.Y[k],x,y,r*0.3)
       #self.ctx.set_source_rgb(*CONTRASTB)
-      #self.circle(x,y,r*0.5)
       #self.circle_stroke(x,y,r*0.5)
+
+      self.DQ.appendleft(num)
+      self.DQ.appendleft(k)
 
       self.num += 1
 
@@ -302,6 +328,7 @@ class Render(object):
       return True, True
 
     ## failed to place node
+    self.DQ.appendleft(k)
     return True, False
 
 
