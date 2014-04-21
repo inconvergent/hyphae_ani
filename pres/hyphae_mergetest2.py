@@ -10,11 +10,13 @@ from time import time as time
 from operator import itemgetter
 from numpy.random import normal as normal
 
+from collections import deque
+
 import gtk, gobject
 
 NMAX = 2*1e7 # maxmimum number of nodes
 N = 800 # image resolution
-ZONES = N/20 # number of zones on each axis
+ZONES = N/100 # number of zones on each axis
 ONE = 1./N # pixelsize
 
 BACK = [0.1]*3
@@ -28,18 +30,18 @@ Y_MIN = 0+10*ONE #
 X_MAX = 1-10*ONE #
 Y_MAX = 1-10*ONE #
 
-RAD = 20*ONE # 
+RAD = 40*ONE # 
 RAD_SCALE = 0.9
 R_RAND_SIZE = 7 
 CK_MAX = 7 # max number of allowed branch attempts from a node
 
-#CIRCLE_RADIUS = 0.4
-
 UPDATE_NUM = 1 # write image this often
+#TIMEOUT = 100 ## 5 is quite fast
+TIMEOUT = 5 ## 5 is quite fast
 
 SEARCH_ANGLE_MAX = pi
 SEARCH_ANGLE_EXP = 0.15
-SOURCE_NUM = 4
+SOURCE_NUM = 1
 
 ALPHA = 0.5
 GRAINS = 3
@@ -91,7 +93,7 @@ class Render(object):
     self.itt = 0
 
     #gobject.idle_add(self.step_wrap)
-    gobject.timeout_add(5,self.step_wrap)
+    gobject.timeout_add(TIMEOUT,self.step_wrap)
     gtk.main()
 
   def __write_image_and_exit(self,*args):
@@ -112,37 +114,32 @@ class Render(object):
     self.C = np.zeros(NMAX,'int') # number of branch attempts
     self.D = np.zeros(NMAX,'int')-1 # index of first descendant
     self.B = np.zeros(NMAX,'int') # index of branch
-
+    self.DQ = deque()
 
     self.num = 0
 
-    rot = random()*pi*2
+    ## only one source node
+    i = 0
 
-    for i in xrange(SOURCE_NUM):
+    x = 0.5
+    y = 0.5
 
-      ## randomly on canvas
-      #x = X_MIN*5 + random()*(X_MAX-X_MIN)
-      #y = Y_MIN*5 + random()*(Y_MAX-Y_MIN)
+    self.X[i] = x
+    self.Y[i] = y
+    self.THE[i] = random()*pi*2.
+    self.GE[i] = 1
+    self.P[i] = -1 # no parent
+    self.R[i] = RAD
+    self.B[i] = i
+    self.DQ.append(i)
 
-      ## on circle
-      x = 0.5 + sin(rot + (i*pi*2)/float(SOURCE_NUM))*0.1
-      y = 0.5 + cos(rot + (i*pi*2)/float(SOURCE_NUM))*0.1
+    z = get_z(x,y)
+    self.Z[z].append(self.num)
+    self.num += 1
 
-      self.X[i] = x
-      self.Y[i] = y
-      self.THE[i] = random()*pi*2.
-      self.GE[i] = 1
-      self.P[i] = -1 # no parent
-      self.R[i] = RAD
-      self.B[i]
-
-      z = get_z(x,y)
-      self.Z[z].append(self.num)
-      self.num += 1
-
-      ## draw inicator circle
-      self.ctx.set_source_rgba(*CONTRASTA)
-      self.circle(x,y,RAD*0.5)
+    ## draw inicator circle
+    self.ctx.set_source_rgba(*CONTRASTB)
+    self.circle(x,y,RAD*0.5)
 
   def __init_cairo(self):
 
@@ -210,7 +207,7 @@ class Render(object):
     if not self.num%UPDATE_NUM and added_new:
       self.expose()
 
-    #print self.num
+    print self.num
 
     return res
 
@@ -219,24 +216,42 @@ class Render(object):
     self.itt += 1
     num = self.num
 
-    k = int(random()*num)
+    try:
+
+      k = self.DQ.pop()
+
+    except IndexError:
+
+      ## no more live nodes.
+      return False, False
+
     self.C[k] += 1
 
     if self.C[k]>CK_MAX:
 
       ## node is dead
+
+      ## this is inefficient. but it does not matter for small canvases
+      self.ctx.set_source_rgb(*CONTRASTC)
+      self.circle(self.X[k],self.Y[k],ONE*4)
+
       return True, False
 
+    #r = RAD + random()*ONE*R_RAND_SIZE
     r = self.R[k]*RAD_SCALE if self.D[k]>-1 else self.R[k]
+    b = num if self.D[k]>-1 else self.B[k]
 
-    if r<ONE*0.5:
+    if r<ONE:
 
       ## node dies
+
+      self.ctx.set_source_rgb(*CONTRASTC)
+      self.circle(self.X[k],self.Y[k],ONE*4)
+
       self.C[k] = CK_MAX+1
       return True, False
 
     ge = self.GE[k]+1 if self.D[k]>-1 else self.GE[k]
-    b = num if self.D[k]>-1 else self.B[k]
 
     angle = normal()*SEARCH_ANGLE_MAX
     the = self.THE[k] + (1.-1./((ge+1)**SEARCH_ANGLE_EXP))*angle
@@ -261,22 +276,19 @@ class Render(object):
     try:
 
       inds = near_zone_inds(x,y,self.Z,k)
-
     except IndexError:
 
       ## node is outside zonemapped area
+      self.DQ.appendleft(k)
       return True, False
 
     good = True
     if len(inds)>0:
-      dst = square(self.X[inds]-x) + square(self.Y[inds]-y)
+      dd = square(self.X[inds]-x) + square(self.Y[inds]-y)
 
-      sqrt(dst,dst)
-      mask = dst*2 >= self.R[inds]+r
+      sqrt(dd,dd)
+      mask = dd*2 >= self.R[inds]+r
       good = mask.all()
-
-    ## zone index of candidate node
-    z = get_z(x,y) 
       
     if good: 
       self.X[num] = x
@@ -286,27 +298,34 @@ class Render(object):
       self.P[num] = k
       self.GE[num] = ge
       self.B[num] = b
-      #print self.B[k],b
 
       ## set first descendant if node has no descendants
-      ## this is used so that we might know whether a new node is 
-      ## part of a new "off-branch" or not
       if self.D[k]<0:
         self.D[k] = num
-      #else:
-        ## descendant is already -1
-        #pass
+
+      z = get_z(x,y) 
 
       self.Z[z].append(num)
 
-      #self.ctx.set_line_width(r*0.5)
-      #self.line(self.X[k],self.Y[k],x,y)
-
+      self.ctx.set_line_width(ONE*2)
       self.ctx.set_source_rgb(*FRONT)
-      self.circles(self.X[k],self.Y[k],x,y,r*0.3)
-      #self.ctx.set_source_rgb(*CONTRASTB)
-      #self.circle(x,y,r*0.5)
+      self.line(self.X[k],self.Y[k],x,y)
+
+      self.ctx.set_source_rgb(*CONTRASTB)
+      self.circle(x,y,ONE*4)
+
+      #self.ctx.set_line_width(ONE)
+      #self.ctx.set_source_rgb(*CONTRASTA)
       #self.circle_stroke(x,y,r*0.5)
+
+      #self.ctx.set_source_rgb(*FRONT)
+      #self.circles(self.X[k],self.Y[k],x,y,r*0.3)
+
+      #self.ctx.set_source_rgb(*CONTRASTB)
+      #self.circle_stroke(x,y,r*0.5)
+
+      self.DQ.appendleft(num)
+      self.DQ.appendleft(k)
 
       self.num += 1
 
@@ -316,22 +335,30 @@ class Render(object):
     if not good and len(inds)>0:
 
       ## can we merge two branches?
-      
-      if mask.sum()==1:
 
-        mk = inds[mask][0]
+      if mask.sum()>1:
 
-        print self.num, inds
-        print b, self.B[inds[mask]]
-        print k, mk
+        ms = np.argsort(dd)
+        mks = ms[:2]
+        mk = inds[mks[0]]
 
-        self.ctx.set_source_rgb(*CONTRASTA)
-        self.circles(self.X[k],self.Y[k],self.X[mk],self.Y[mk],r*0.3)
+        if 2*dd[mks[0]]<dd[mks[1]] and self.P[mk]!=k and self.C[mk]<CK_MAX:
 
-        self.C[k] = CK_MAX+1
-        self.C[mk] = CK_MAX+1
+          self.ctx.set_source_rgb(*CONTRASTA)
+          #self.circles(self.X[k],self.Y[k],self.X[mk],self.Y[mk],r*0.3)
+
+          self.ctx.set_line_width(ONE*2)
+          self.ctx.set_source_rgb(*FRONT)
+          self.line(self.X[k],self.Y[k],self.X[mk],self.Y[mk])
+
+          self.ctx.set_source_rgb(1,0,0)
+          self.circle(self.X[mk],self.Y[mk],ONE*5)
+
+          #self.C[k] = CK_MAX+1
+          self.C[mk] = CK_MAX+1
 
     ## failed to place node
+    self.DQ.appendleft(k)
     return True, False
 
 

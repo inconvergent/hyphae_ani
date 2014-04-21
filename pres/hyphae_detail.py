@@ -38,7 +38,8 @@ CK_MAX = 7 # max number of allowed branch attempts from a node
 #CIRCLE_RADIUS = 0.4
 
 UPDATE_NUM = 1 # write image this often
-TIMEOUT = 100 ## 5 is quite fast
+#TIMEOUT = 100 ## 5 is quite fast
+TIMEOUT = 5 ## 5 is quite fast
 
 SEARCH_ANGLE_MAX = pi
 SEARCH_ANGLE_EXP = 0.15
