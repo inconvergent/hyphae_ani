@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from numpy import cos, sin, pi, arctan2, sqrt,\
-                  square, int, linspace, any, all
+                  square, int, linspace, any, all, floor, round, ceil
 from numpy.random import random as random
 import numpy as np
 import cairo
@@ -42,6 +42,8 @@ UPDATE_NUM = 1 # write image this often
 SEARCH_ANGLE_MAX = pi*2
 SEARCH_ANGLE_EXP = 0.05
 SOURCE_NUM = 5
+
+CIRCLE_RADIUS = 0.45
 
 ALPHA = 0.5
 GRAINS = 3
@@ -219,18 +221,23 @@ class Render(object):
 
     self.itt += 1
     num = self.num
+    
+    try:
 
-    #k = int(random()*num)
-    k = self.DQ.pop()
+      k = self.DQ.pop()
+
+    except IndexError:
+
+      ## no more live nodes.
+      return False, False
+
     self.C[k] += 1
-
 
     if self.C[k]>CK_MAX:
 
       ## node is dead
       return True, False
 
-    #r = RAD + random()*ONE*R_RAND_SIZE
     r = self.R[k]*RAD_SCALE if self.D[k]>-1 else self.R[k]
 
     if r<ONE*0.5:
@@ -243,6 +250,10 @@ class Render(object):
 
     angle = normal()*SEARCH_ANGLE_MAX
     the = self.THE[k] + (1.-1./((ge+1)**SEARCH_ANGLE_EXP))*angle
+
+    #pm = [0,1,-1][int(floor(random()*3))]
+    #angle = pm*pi*0.2
+    #the = self.THE[k] + angle
 
     x = self.X[k] + sin(the)*r
     y = self.Y[k] + cos(the)*r
