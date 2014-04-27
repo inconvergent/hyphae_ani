@@ -39,8 +39,23 @@ CK_MAX = 7 # max number of allowed branch attempts from a node
 
 UPDATE_NUM = 1 # write image this often
 
+## low
+#SEARCH_ANGLE_MAX = pi
+#SEARCH_ANGLE_EXP = 0.09
+
+## medium
 SEARCH_ANGLE_MAX = pi*2
 SEARCH_ANGLE_EXP = 0.05
+
+## high
+#SEARCH_ANGLE_MAX = pi*2
+#SEARCH_ANGLE_EXP = 0.2
+
+## very high
+#SEARCH_ANGLE_MAX = pi*2
+#SEARCH_ANGLE_EXP = 100
+
+
 SOURCE_NUM = 5
 
 CIRCLE_RADIUS = 0.45
@@ -310,6 +325,7 @@ class Render(object):
 
       self.ctx.set_source_rgb(*FRONT)
       self.circles(self.X[k],self.Y[k],x,y,r*0.3)
+
       #self.ctx.set_source_rgb(*CONTRASTB)
       #self.circle(x,y,r*0.5)
       #self.circle_stroke(x,y,r*0.5)

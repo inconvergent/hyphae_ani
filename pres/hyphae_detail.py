@@ -219,6 +219,7 @@ class Render(object):
     try:
 
       k = self.DQ.pop()
+      #k = int(random()*self.num)
 
     except IndexError:
 
