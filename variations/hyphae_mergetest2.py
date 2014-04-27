@@ -30,7 +30,7 @@ Y_MIN = 0+10*ONE #
 X_MAX = 1-10*ONE #
 Y_MAX = 1-10*ONE #
 
-RAD = 40*ONE # 
+RAD = 20*ONE # 
 RAD_SCALE = 0.9
 R_RAND_SIZE = 7 
 CK_MAX = 7 # max number of allowed branch attempts from a node
@@ -232,8 +232,8 @@ class Render(object):
       ## node is dead
 
       ## this is inefficient. but it does not matter for small canvases
-      self.ctx.set_source_rgb(*CONTRASTC)
-      self.circle(self.X[k],self.Y[k],ONE*4)
+      #self.ctx.set_source_rgb(*CONTRASTC)
+      #self.circle(self.X[k],self.Y[k],ONE*4)
 
       return True, False
 
@@ -307,19 +307,19 @@ class Render(object):
 
       self.Z[z].append(num)
 
-      self.ctx.set_line_width(ONE*2)
-      self.ctx.set_source_rgb(*FRONT)
-      self.line(self.X[k],self.Y[k],x,y)
+      #self.ctx.set_line_width(ONE*2)
+      #self.ctx.set_source_rgb(*FRONT)
+      #self.line(self.X[k],self.Y[k],x,y)
 
-      self.ctx.set_source_rgb(*CONTRASTB)
-      self.circle(x,y,ONE*4)
+      #self.ctx.set_source_rgb(*CONTRASTB)
+      #self.circle(x,y,ONE*4)
 
       #self.ctx.set_line_width(ONE)
       #self.ctx.set_source_rgb(*CONTRASTA)
       #self.circle_stroke(x,y,r*0.5)
 
-      #self.ctx.set_source_rgb(*FRONT)
-      #self.circles(self.X[k],self.Y[k],x,y,r*0.3)
+      self.ctx.set_source_rgb(*FRONT)
+      self.circles(self.X[k],self.Y[k],x,y,r*0.2)
 
       #self.ctx.set_source_rgb(*CONTRASTB)
       #self.circle_stroke(x,y,r*0.5)
@@ -342,20 +342,48 @@ class Render(object):
         mks = ms[:2]
         mk = inds[mks[0]]
 
+        #if 2*dd[mks[0]]<dd[mks[1]] and self.P[mk]!=k and self.C[mk]<CK_MAX:
         if 2*dd[mks[0]]<dd[mks[1]] and self.P[mk]!=k and self.C[mk]<CK_MAX:
 
-          self.ctx.set_source_rgb(*CONTRASTA)
-          #self.circles(self.X[k],self.Y[k],self.X[mk],self.Y[mk],r*0.3)
+          dx = self.X[mk] - self.X[k]
+          dy = self.Y[mk] - self.Y[k]
+          dd = sqrt(dx*dx+dy*dy)
+          beta = arctan2(dy,dx)
 
-          self.ctx.set_line_width(ONE*2)
-          self.ctx.set_source_rgb(*FRONT)
-          self.line(self.X[k],self.Y[k],self.X[mk],self.Y[mk])
+          x = self.X[k] + cos(beta)*dd*0.5
+          y = self.Y[k] + sin(beta)*dd*0.5
+
+          self.X[num] = x
+          self.Y[num] = y
+          self.R[num] = r
+          self.THE[num] = beta
+          self.P[num] = k
+          self.GE[num] = ge
+
+          self.C[num] = CK_MAX+1
+
+          ## set first descendant if node has no descendants
+          if self.D[k]<0:
+            self.D[k] = num
+
+          z = get_z(x,y) 
+          self.Z[z].append(num)
+
+          #self.DQ.appendleft(num)
+          self.DQ.appendleft(k)
+
+          self.num += 1
 
           self.ctx.set_source_rgb(1,0,0)
-          self.circle(self.X[mk],self.Y[mk],ONE*5)
+          self.circle(x,y,r*0.1)
 
-          #self.C[k] = CK_MAX+1
-          self.C[mk] = CK_MAX+1
+          #self.ctx.set_source_rgb(*CONTRASTB)
+          #self.circles(self.X[k],self.Y[k],self.X[mk],self.Y[mk],r*0.2)
+
+          ##self.C[k] = CK_MAX+1
+          #self.C[mks[0]] = CK_MAX+1
+          
+          return True, True
 
     ## failed to place node
     self.DQ.appendleft(k)
