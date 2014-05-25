@@ -355,7 +355,7 @@ class Render(object):
           self.circle(self.X[mk],self.Y[mk],ONE*5)
 
           #self.C[k] = CK_MAX+1
-          self.C[mk] = CK_MAX+1
+          #self.C[mk] = CK_MAX+1
 
     ## failed to place node
     self.DQ.appendleft(k)

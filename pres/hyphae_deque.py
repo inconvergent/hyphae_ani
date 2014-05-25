@@ -40,12 +40,12 @@ CK_MAX = 7 # max number of allowed branch attempts from a node
 UPDATE_NUM = 1 # write image this often
 
 ## low
-#SEARCH_ANGLE_MAX = pi
-#SEARCH_ANGLE_EXP = 0.09
+SEARCH_ANGLE_MAX = pi
+SEARCH_ANGLE_EXP = 0.09
 
 ## medium
-SEARCH_ANGLE_MAX = pi*2
-SEARCH_ANGLE_EXP = 0.05
+#SEARCH_ANGLE_MAX = pi*2
+#SEARCH_ANGLE_EXP = 0.05
 
 ## high
 #SEARCH_ANGLE_MAX = pi*2
