@@ -15,7 +15,7 @@ from collections import deque
 import gtk, gobject
 
 NMAX = 2*1e7 # maxmimum number of nodes
-N = 800 # image resolution
+N = 1000 # image resolution
 ZONES = N/100 # number of zones on each axis
 ONE = 1./N # pixelsize
 
@@ -30,7 +30,7 @@ Y_MIN = 0+10*ONE #
 X_MAX = 1-10*ONE #
 Y_MAX = 1-10*ONE #
 
-RAD = 40*ONE # 
+RAD = 50*ONE # 
 RAD_SCALE = 0.9
 R_RAND_SIZE = 7 
 CK_MAX = 7 # max number of allowed branch attempts from a node
