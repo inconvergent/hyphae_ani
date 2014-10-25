@@ -19,11 +19,13 @@ N = 1080 # image resolution
 ZONES = N/20 # number of zones on each axis
 ONE = 1./N # pixelsize
 
-BACK = [0.1]*3
-FRONT = [0.8]*3
-CONTRASTA = [0.84,0.37,0] # orange
-CONTRASTB = [0.53,0.53,1] # lightblue
-CONTRASTC = [0.84,1,0]
+BACK = [1]*3
+FRONT = [0]*3
+
+CONTRASTA = [0,0.4,0.4]
+CONTRASTB = [0,0.4,0.4]
+CONTRASTC = [0,0.7,0.7]
+
 
 X_MIN = 0+10*ONE # border
 Y_MIN = 0+10*ONE #
@@ -66,7 +68,9 @@ GRAINS = 3
 
 def near_zone_inds(x,y,Z,k):
 
+  i = 1+int(x*ZONES)
   j = 1+int(y*ZONES)
+
   ij = np.array([i-1,i,i+1,i-1,i,i+1,i-1,i,i+1])*ZONES+\
        np.array([j+1,j+1,j+1,j,j,j,j-1,j-1,j-1])
 

@@ -21,8 +21,8 @@ ONE = 1./N # pixelsize
 
 BACK = [1]*3
 FRONT = [0]*3
-CONTRASTA = [0,0.4,0.4] # orange
-CONTRASTB = [0,0.4,0.4] # lightblue
+CONTRASTA = [0,0.4,0.4]
+CONTRASTB = [0,0.4,0.4]
 CONTRASTC = [0,0.7,0.7]
 
 X_MIN = 0+10*ONE # border
