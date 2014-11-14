@@ -35,28 +35,14 @@ Y_MAX = 1-10*ONE #
 RAD = 10*ONE #
 RAD_SCALE = 0.9
 R_RAND_SIZE = 7
-CK_MAX = 7 # max number of allowed branch attempts from a node
+CK_MAX = 10 # max number of allowed branch attempts from a node
 
 #CIRCLE_RADIUS = 0.4
 
-UPDATE_NUM = 1 # write image this often
+UPDATE_NUM = 2 # write image this often
 
-## low
-#SEARCH_ANGLE_MAX = pi
-#SEARCH_ANGLE_EXP = 0.09
-
-## medium
-SEARCH_ANGLE_MAX = pi*2
-SEARCH_ANGLE_EXP = 0.05
-
-## high
-#SEARCH_ANGLE_MAX = pi*2
-#SEARCH_ANGLE_EXP = 0.2
-
-## very high
-#SEARCH_ANGLE_MAX = pi*2
-#SEARCH_ANGLE_EXP = 100
-
+SEARCH_ANGLE_MAX = pi
+SEARCH_ANGLE_EXP = 0.5
 
 SOURCE_NUM = 5
 
@@ -266,7 +252,7 @@ class Render(object):
 
     ge = self.GE[k]+1 if self.D[k]>-1 else self.GE[k]
 
-    angle = normal()*SEARCH_ANGLE_MAX
+    angle = (0.5-random())*SEARCH_ANGLE_MAX
     the = self.THE[k] + (1.-1./((ge+1)**SEARCH_ANGLE_EXP))*angle
 
     #pm = [0,1,-1][int(floor(random()*3))]
