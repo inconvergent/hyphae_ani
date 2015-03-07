@@ -7,7 +7,7 @@ such a way that no two circles overlap. The results are incredibly
 intricate and fractal-like, and they can be tweaked in a great number of
 ways.
 
-![hyphae](http://inconvergent.net/xstatic/img-content/hyphae_a.jpg "hyphae")
+![hyphae](http://inconvergent.net/img/hyphae_a.jpg "hyphae")
 
 -----------
 http://inconvergent.net
