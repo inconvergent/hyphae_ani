@@ -30,14 +30,14 @@ Y_MIN = 0+10*ONE #
 X_MAX = 1-10*ONE #
 Y_MAX = 1-10*ONE #
 
-RAD = 10*ONE # 
+RAD = 10*ONE #
 RAD_SCALE = 0.9
-R_RAND_SIZE = 7 
+R_RAND_SIZE = 7
 CK_MAX = 7 # max number of allowed branch attempts from a node
 
 #CIRCLE_RADIUS = 0.4
 
-UPDATE_NUM = 1 # write image this often
+UPDATE_NUM = 20 # write image this often
 
 ## low
 #SEARCH_ANGLE_MAX = pi
@@ -65,10 +65,10 @@ GRAINS = 3
 
 
 def near_zone_inds(x,y,Z,k):
-  
-  i = 1+int(x*ZONES) 
-  j = 1+int(y*ZONES) 
-  ij = np.array([i-1,i,i+1,i-1,i,i+1,i-1,i,i+1])*ZONES+\
+
+  i = 1+int(x*ZONES)
+  j = 1+int(y*ZONES)
+  ij = np.array([i-1,i,i+1,i-1,i,i+1,i-1,i,i+1])*(ZONES+2)+\
        np.array([j+1,j+1,j+1,j,j,j,j-1,j-1,j-1])
 
   it = itemgetter(*ij)
@@ -79,9 +79,9 @@ def near_zone_inds(x,y,Z,k):
 
 def get_z(x,y):
 
-  i = 1+int(x*ZONES) 
-  j = 1+int(y*ZONES) 
-  z = i*ZONES+j
+  i = 1+int(x*ZONES)
+  j = 1+int(y*ZONES)
+  z = i*(ZONES+2)+j
   return z
 
 
@@ -212,7 +212,7 @@ class Render(object):
     yp = y1-scale*sin(a)
 
     for x,y in zip(xp,yp):
-      self.ctx.arc(x,y,r,0,pi*2.) 
+      self.ctx.arc(x,y,r,0,pi*2.)
       self.ctx.fill()
 
   def expose(self,*args):
@@ -236,7 +236,7 @@ class Render(object):
 
     self.itt += 1
     num = self.num
-    
+
     try:
 
       k = self.DQ.pop()
@@ -286,7 +286,7 @@ class Render(object):
 
       ## node is outside circle
       return True,False
-    
+
     try:
 
       inds = near_zone_inds(x,y,self.Z,k)
@@ -303,8 +303,8 @@ class Render(object):
       sqrt(dd,dd)
       mask = dd*2 >= self.R[inds]+r
       good = mask.all()
-      
-    if good: 
+
+    if good:
       self.X[num] = x
       self.Y[num] = y
       self.R[num] = r
@@ -316,7 +316,7 @@ class Render(object):
       if self.D[k]<0:
         self.D[k] = num
 
-      z = get_z(x,y) 
+      z = get_z(x,y)
 
       self.Z[z].append(num)
 
