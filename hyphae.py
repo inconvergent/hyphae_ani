@@ -15,12 +15,12 @@ from collections import deque
 import gtk, gobject
 
 NMAX = 2*1e7 # maxmimum number of nodes
-N = 1000 # image resolution
+N = 560# image resolution
 ZONES = N/20 # number of zones on each axis
 ONE = 1./N # pixelsize
 
-BACK = [0.1]*3
-FRONT = [0.8]*3
+BACK = [1]*3
+FRONT = [0]*3
 CONTRASTA = [0.84,0.37,0] # orange
 CONTRASTB = [0.53,0.53,1] # lightblue
 CONTRASTC = [0.84,1,0]
@@ -37,7 +37,7 @@ CK_MAX = 7 # max number of allowed branch attempts from a node
 
 #CIRCLE_RADIUS = 0.4
 
-UPDATE_NUM = 20 # write image this often
+UPDATE_NUM = 1 # write image this often
 
 ## low
 #SEARCH_ANGLE_MAX = pi
@@ -45,7 +45,7 @@ UPDATE_NUM = 20 # write image this often
 
 ## medium
 SEARCH_ANGLE_MAX = pi*2
-SEARCH_ANGLE_EXP = 0.05
+SEARCH_ANGLE_EXP = 0.08
 
 ## high
 #SEARCH_ANGLE_MAX = pi*2
@@ -325,6 +325,9 @@ class Render(object):
 
       self.ctx.set_source_rgb(*FRONT)
       self.circles(self.X[k],self.Y[k],x,y,r*0.3)
+
+      #if self.num%13==0:
+        #self.sur.write_to_png('{:05d}.png'.format(self.num))
 
       #self.ctx.set_source_rgb(*CONTRASTB)
       #self.circle(x,y,r*0.5)
